@@ -114,6 +114,13 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
   p->priority =0;
+  acquire(&tickslock);
+  p->creation_time = ticks;
+  p->running_time = 0;
+  p->sleep_time = 0;
+  p->waiting_time = 0;
+  p->termination_time = 0;
+  release(&tickslock);
   return p;
 }
 
@@ -265,8 +272,12 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  acquire(&tickslock);
+  curproc->termination_time = ticks;
+  release(&tickslock);
   sched();
   panic("zombie exit");
+
 }
 
 // Wait for a child process to exit and return its pid.
@@ -573,4 +584,21 @@ int getChildren(){
 int changePolicy(){
   scheduler_type = (scheduler_type + 1)%2;
   return scheduler_type;
+}
+
+void updateTimeOfProcesses(void){
+  struct proc *p;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+   if(p->state == SLEEPING ){
+     p->sleep_time+=1;
+   }
+   if(p->state == RUNNABLE ){
+     p->waiting_time+=1;
+   }
+   if(p->state == RUNNING ){
+     p->running_time+=1;
+   }
+  }
+  release(&ptable.lock);
 }
