@@ -113,7 +113,7 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+  p->priority =0;
   return p;
 }
 
@@ -327,7 +327,7 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
+  struct proc *target;
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -354,7 +354,26 @@ scheduler(void)
    }
   }
   else if(scheduler_type == 1){
-    
+    for(p = ptable.proc;p < &ptable.proc[NPROC];p++){
+      if(p->state != RUNNABLE)
+        continue;
+      target=p;
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+        if(p->priority<target->priority){
+          target=p;
+        }
+      }
+      p=target;
+      p->priority+=p->priority;
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+      c->proc = 0;
+    }
   }
   release(&ptable.lock);
   }
