@@ -20,6 +20,8 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+int scheduler_type = 0;
+
 void
 pinit(void)
 {
@@ -329,29 +331,32 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
-    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    if(scheduler_type == 0){
+   // Loop over p`rocess table looking for process to run.
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+     if(p->state != RUNNABLE)
         continue;
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
+      
+     // Switch to chosen process.  It is the process's job
+     // to release ptable.lock and then reacquire it
+     // before jumping back to us.
       c->proc = p;
       switchuvm(p);
-      p->state = RUNNING;
+     p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+     swtch(&(c->scheduler), p->context);
+     switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
-    }
-    release(&ptable.lock);
-
+     // Process is done running for now.
+     // It should have changed its p->state before coming back.
+     c->proc = 0;
+   }
+  }
+  else if(scheduler_type == 1){
+    
+  }
+  release(&ptable.lock);
   }
 }
 
@@ -547,5 +552,6 @@ int getChildren(){
 }
 
 int changePolicy(){
-  return 2020;
+  scheduler_type = (scheduler_type + 1)%2;
+  return scheduler_type;
 }
