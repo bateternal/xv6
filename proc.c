@@ -602,3 +602,14 @@ void updateTimeOfProcesses(void){
   }
   release(&ptable.lock);
 }
+
+
+struct timevariables waitForChiled(void){
+  struct timevariables time_variables;
+  time_variables.creation_time=0;
+  time_variables.running_time=0;
+  time_variables.sleep_time=0;
+  time_variables.termination_time=0;
+  time_variables.waiting_time=0;
+  return time_variables;
+}

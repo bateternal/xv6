@@ -123,6 +123,7 @@ void            yield(void);
 int 			getChildren(void);
 int 			changePolicy(void);
 void            updateTimeOfProcesses(void);
+struct timevariables waitForChiled(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

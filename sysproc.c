@@ -97,3 +97,7 @@ int sys_getChildren(void){
 int sys_changePolicy(void){
   return changePolicy();
 }
+
+struct timevariables sys_waitForChiled(void){
+  return waitForChiled();
+}
