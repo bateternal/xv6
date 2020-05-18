@@ -532,3 +532,7 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int getyear(){
+  return 2020;
+}
