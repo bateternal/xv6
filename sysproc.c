@@ -107,3 +107,11 @@ int sys_waitForChiled(void){
 int sys_getRuntime(void){
   return getRuntime();
 }
+
+
+int sys_getRuntimeofchild(void){
+    int *pid;
+    argptr (0 , (void*)&pid ,sizeof(int *));
+    return getRuntimeofchild(pid);
+}   
+

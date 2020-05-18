@@ -29,6 +29,7 @@ int getChildren(void);
 int changePolicy(void);
 int waitForChiled(struct timevariables*);
 int getRuntime(void);
+int getRuntimeofchild(int *);
 
 // ulib.c
 int stat(const char*, struct stat*);

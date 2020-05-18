@@ -126,6 +126,7 @@ int 			changePolicy(void);
 void            updateTimeOfProcesses(void);
 int 			waitForChiled(struct timevariables*);
 int             getRuntime(void);
+int 			getRuntimeofchild(int *);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

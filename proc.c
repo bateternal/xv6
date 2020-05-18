@@ -654,3 +654,15 @@ int waitForChiled(struct timevariables *times){
 int getRuntime(void){
   return myproc()->running_time;
 }
+
+int getRuntimeofchild(int *process_id){
+  struct proc *p;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == *process_id){
+      return p->running_time;
+    } 
+  }
+  release(&ptable.lock);
+  return 0;
+}
