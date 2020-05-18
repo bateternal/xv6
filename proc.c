@@ -545,3 +545,7 @@ int getChildren(){
   release(&ptable.lock);
   return pids;
 }
+
+int changePolicy(){
+  return 2020;
+}

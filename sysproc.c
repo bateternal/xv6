@@ -93,3 +93,7 @@ sys_uptime(void)
 int sys_getChildren(void){
   return getChildren();
 }
+
+int sys_changePolicy(void){
+  return changePolicy();
+}
