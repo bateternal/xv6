@@ -98,6 +98,12 @@ int sys_changePolicy(void){
   return changePolicy();
 }
 
-struct timevariables sys_waitForChiled(void){
-  return waitForChiled();
+int sys_waitForChiled(void){
+  struct timevariables *times;
+  argptr (0 , (void*)&times ,sizeof(*times));
+  return waitForChiled(times);
+}
+
+int sys_getRuntime(void){
+  return getRuntime();
 }

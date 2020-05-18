@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct timevariables;
 
 // bio.c
 void            binit(void);
@@ -123,7 +124,8 @@ void            yield(void);
 int 			getChildren(void);
 int 			changePolicy(void);
 void            updateTimeOfProcesses(void);
-struct timevariables waitForChiled(void);
+int 			waitForChiled(struct timevariables*);
+int             getRuntime(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

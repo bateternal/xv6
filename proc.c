@@ -604,12 +604,53 @@ void updateTimeOfProcesses(void){
 }
 
 
-struct timevariables waitForChiled(void){
-  struct timevariables time_variables;
-  time_variables.creation_time=0;
-  time_variables.running_time=0;
-  time_variables.sleep_time=0;
-  time_variables.termination_time=0;
-  time_variables.waiting_time=0;
-  return time_variables;
+int waitForChiled(struct timevariables *times){
+  struct proc *p;
+  int havekids, pid;
+  struct proc *curproc = myproc();
+  acquire(&ptable.lock);
+  for(;;){
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent != curproc)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        times->creation_time=p->creation_time;
+        times->running_time=p->running_time;
+        times->sleep_time=p->sleep_time;
+        times->termination_time=p->termination_time;
+        times->waiting_time=p->waiting_time;
+        p->creation_time =0;
+        p->running_time = 0;
+        p-> sleep_time = 0;
+        p->termination_time = 0;
+        p->waiting_time = 0;
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        p->state = UNUSED;
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+
+    if(!havekids || curproc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    sleep(curproc, &ptable.lock);
+  }
+}
+
+
+int getRuntime(void){
+  return myproc()->running_time;
 }
