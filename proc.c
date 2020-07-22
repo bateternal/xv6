@@ -6,11 +6,19 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "ticketlock.h"
 
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
+
+struct ticketlock lk;
+struct ticketlock mutex;
+struct ticketlock write;
+
+int sharedcounter=0;
+int readerscount=0;
 
 static struct proc *initproc;
 
@@ -19,8 +27,6 @@ extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
-
-int scheduler_type = 0;
 
 void
 pinit(void)
@@ -113,14 +119,7 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-  p->priority =0;
-  acquire(&tickslock);
-  p->creation_time = ticks;
-  p->running_time = 0;
-  p->sleep_time = 0;
-  p->waiting_time = 0;
-  p->termination_time = 0;
-  release(&tickslock);
+
   return p;
 }
 
@@ -272,12 +271,8 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  acquire(&tickslock);
-  curproc->termination_time = ticks;
-  release(&tickslock);
   sched();
   panic("zombie exit");
-
 }
 
 // Wait for a child process to exit and return its pid.
@@ -338,55 +333,33 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  struct proc *target;
+  
   for(;;){
     // Enable interrupts on this processor.
     sti();
+
+    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    if(scheduler_type == 0){
-   // Loop over p`rocess table looking for process to run.
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-     if(p->state != RUNNABLE)
-        continue;
-      
-     // Switch to chosen process.  It is the process's job
-     // to release ptable.lock and then reacquire it
-     // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-     p->state = RUNNING;
-
-     swtch(&(c->scheduler), p->context);
-     switchkvm();
-
-     // Process is done running for now.
-     // It should have changed its p->state before coming back.
-     c->proc = 0;
-   }
-  }
-  else if(scheduler_type == 1){
-    for(p = ptable.proc;p < &ptable.proc[NPROC];p++){
       if(p->state != RUNNABLE)
         continue;
-      target=p;
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-        if(p->priority<target->priority){
-          target=p;
-        }
-      }
-      p=target;
-      p->priority+=p->priority;
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+
       swtch(&(c->scheduler), p->context);
       switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
       c->proc = 0;
     }
-  }
-  release(&ptable.lock);
+    release(&ptable.lock);
+
   }
 }
 
@@ -568,101 +541,50 @@ procdump(void)
   }
 }
 
-int getChildren(){
-  int pids=0;
-  struct proc *currproc = myproc();
-  struct proc *p;
-  acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->parent->pid == currproc->pid){
-      pids = p->pid + pids*100;
-    } 
-  release(&ptable.lock);
-  return pids;
-}
 
-int changePolicy(){
-  scheduler_type = (scheduler_type + 1)%2;
-  return scheduler_type;
-}
-
-void updateTimeOfProcesses(void){
-  struct proc *p;
-  acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-   if(p->state == SLEEPING ){
-     p->sleep_time+=1;
-   }
-   if(p->state == RUNNABLE ){
-     p->waiting_time+=1;
-   }
-   if(p->state == RUNNING ){
-     p->running_time+=1;
-   }
-  }
-  release(&ptable.lock);
-}
-
-
-int waitForChiled(struct timevariables *times){
-  struct proc *p;
-  int havekids, pid;
-  struct proc *curproc = myproc();
-  acquire(&ptable.lock);
-  for(;;){
-    havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != curproc)
-        continue;
-      havekids = 1;
-      if(p->state == ZOMBIE){
-        // Found one.
-        times->creation_time=p->creation_time;
-        times->running_time=p->running_time;
-        times->sleep_time=p->sleep_time;
-        times->termination_time=p->termination_time;
-        times->waiting_time=p->waiting_time;
-        p->creation_time =0;
-        p->running_time = 0;
-        p-> sleep_time = 0;
-        p->termination_time = 0;
-        p->waiting_time = 0;
-        pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-        p->state = UNUSED;
-        release(&ptable.lock);
-        return pid;
-      }
-    }
-
-    if(!havekids || curproc->killed){
-      release(&ptable.lock);
-      return -1;
-    }
-
-    sleep(curproc, &ptable.lock);
-  }
-}
-
-
-int getRuntime(void){
-  return myproc()->running_time;
-}
-
-int getRuntimeofchild(int *process_id){
-  struct proc *p;
-  acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == *process_id){
-      return p->running_time;
-    } 
-  }
-  release(&ptable.lock);
+int ticketlockInit(){
+  char *name="ticketlock";
+  initlockticket(&lk,name);
   return 0;
+}
+
+int ticketlockTest(){
+  acquireticket(&lk);
+  cprintf("ticket number is : %d and index is : %d \n",lk.ticket,lk.index);
+  releaseticket(&lk);
+  return 0;
+}
+
+int rwinit(){
+  char *name1="mutex";
+  char *name2="write";
+  initlockticket(&mutex,name1);
+  initlockticket(&write,name2);
+  return 0;
+}
+
+int rwtest(int type){
+  if(type==0){ //curr proc is reader
+    acquireticket(&mutex);
+    readerscount++;
+    if(readerscount==1)
+    {
+      acquireticket(&write);
+    }
+      
+    releaseticket(&mutex);
+    //read
+    acquireticket(&mutex);
+    readerscount--;
+    if(readerscount==0){
+      releaseticket(&write);
+    }
+    releaseticket(&mutex);
+  }
+  else{  //curr proc is writer
+      acquireticket(&write);
+      sharedcounter++;
+      releaseticket(&write);
+  }
+  return sharedcounter;
 }

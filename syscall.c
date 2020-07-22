@@ -103,11 +103,10 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_getChildren(void);
-extern int sys_changePolicy(void);
-extern int sys_waitForChiled(void);
-extern int sys_getRuntime(void);
-extern int sys_getRuntimeofchild(void);
+extern int sys_ticketlockInit(void);
+extern int sys_ticketlockTest(void);
+extern int sys_rwinit(void);
+extern int sys_rwtest(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -131,11 +130,10 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_getChildren] sys_getChildren,
-[SYS_changePolicy] sys_changePolicy,
-[SYS_waitForChiled] sys_waitForChiled,
-[SYS_getRuntime] sys_getRuntime,
-[SYS_getRuntimeofchild] sys_getRuntimeofchild,
+[SYS_ticketlockInit] sys_ticketlockInit,
+[SYS_ticketlockTest] sys_ticketlockTest,
+[SYS_rwinit]  sys_rwinit,
+[SYS_rwtest]  sys_rwtest
 };
 
 void

@@ -20,8 +20,7 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_getChildren 22
-#define SYS_changePolicy 23
-#define SYS_waitForChiled 24
-#define SYS_getRuntime 25
-#define SYS_getRuntimeofchild 26
+#define SYS_ticketlockInit 22
+#define SYS_ticketlockTest 23
+#define SYS_rwinit 24
+#define SYS_rwtest 25

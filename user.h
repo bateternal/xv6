@@ -1,7 +1,5 @@
 struct stat;
 struct rtcdate;
-struct timevariables;
-
 
 // system calls
 int fork(void);
@@ -25,11 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int getChildren(void);
-int changePolicy(void);
-int waitForChiled(struct timevariables*);
-int getRuntime(void);
-int getRuntimeofchild(int *);
+int ticketlockInit(void);
+int ticketlockTest(void);
+int rwinit(void);
+int rwtest(int);
 
 // ulib.c
 int stat(const char*, struct stat*);

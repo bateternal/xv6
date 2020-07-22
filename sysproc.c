@@ -90,28 +90,31 @@ sys_uptime(void)
   return xticks;
 }
 
-int sys_getChildren(void){
-  return getChildren();
+int
+sys_ticketlockInit(void)
+{
+  return ticketlockInit();
 }
 
-int sys_changePolicy(void){
-  return changePolicy();
-}
-
-int sys_waitForChiled(void){
-  struct timevariables *times;
-  argptr (0 , (void*)&times ,sizeof(*times));
-  return waitForChiled(times);
-}
-
-int sys_getRuntime(void){
-  return getRuntime();
+int
+sys_ticketlockTest(void)
+{
+  return ticketlockTest();
 }
 
 
-int sys_getRuntimeofchild(void){
-    int *pid;
-    argptr (0 , (void*)&pid ,sizeof(int *));
-    return getRuntimeofchild(pid);
-}   
+int
+sys_rwinit(void)
+{
+  return rwinit();
+}
 
+int
+sys_rwtest(void)
+{
+  int type;
+  if(argint(0,&type)<0){
+    return -1;
+  }
+  return rwtest(type);
+}

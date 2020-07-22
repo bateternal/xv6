@@ -9,7 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
-struct timevariables;
+struct ticketlock;
 
 // bio.c
 void            binit(void);
@@ -121,12 +121,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-int 			getChildren(void);
-int 			changePolicy(void);
-void            updateTimeOfProcesses(void);
-int 			waitForChiled(struct timevariables*);
-int             getRuntime(void);
-int 			getRuntimeofchild(int *);
+int             ticketlockTest(void);
+int             ticketlockInit(void);
+int             rwinit(void);
+int             rwtest(int);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -139,6 +137,13 @@ void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
 void            pushcli(void);
 void            popcli(void);
+
+// ticketlock.c
+
+void            acquireticket(struct ticketlock*);
+int             holdingticket(struct ticketlock*);
+void            initlockticket(struct ticketlock*, char*);
+void            releaseticket(struct ticketlock*);
 
 // sleeplock.c
 void            acquiresleep(struct sleeplock*);
